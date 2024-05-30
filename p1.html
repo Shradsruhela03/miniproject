@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Guardian Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    
+    header {
+        background-color: #007bff;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        animation: fadeIn 2s;
+    }
+    
+    .container {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        margin: 20px;
+        animation: slideIn 1s ease-out;
+    }
+    
+    .chat-window {
+        flex: 3;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #ccc;
+        background-color: white;
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chat-header {
+        background-color: #007bff;
+        color: white;
+        padding: 1rem;
+        animation: fadeIn 2s;
+    }
+    
+    .chat-body {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+    
+    .chat-footer {
+        display: flex;
+        padding: 1rem;
+        border-top: 1px solid #ccc;
+    }
+    
+    .chat-footer input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+    }
+    
+    .chat-footer button {
+        padding: 0.5rem 1rem;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .chat-footer button:hover {
+        background-color: #0056b3;
+    }
+    
+    .upload-section {
+        flex: 1;
+        padding: 1rem;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-left: 20px;
+        text-align: center;
+        animation: fadeIn 2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    footer {
+        background-color: #007bff;
+        color: white;
+        text-align: center;
+        padding: 1rem;
+        animation: fadeIn 2s;
+    }
+    
+    .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        animation: fadeIn 1s ease-in-out;
+    }
+    
+    .user {
+        background-color: #e1ffc7;
+        text-align: right;
+    }
+    
+    .chatbot {
+        background-color: #f1f1f1;
+        text-align: left;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+</style>
+<script>
+    document.getElementById('send-btn').addEventListener('click', () => {
+        const userInput = document.getElementById('user-input').value;
+        if (userInput.trim()) {
+            appendMessage('User', userInput);
+            document.getElementById('user-input').value = '';
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `symptoms=${encodeURIComponent(userInput)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                const message = `
+                    Predicted Disease: ${data.disease}
+                    Doctors: ${data.doctors.join(', ')}
+                    Medicines: ${data.medicines.join(', ')}
+                    Advice: ${data.advice}
+                `;
+                appendMessage('Chatbot', message);
+                speakMessage(message);
+            });
+        }
+    });
+    
+    document.getElementById('upload-btn').addEventListener('click', () => {
+        const fileInput = document.getElementById('file-input');
+        const file = fileInput.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const message = `File Analysis Result: ${data.result}`;
+                appendMessage('Chatbot', message);
+                speakMessage(message);
+            });
+        } else {
+            alert('Please select a file to upload');
+        }
+    });
+    
+    function appendMessage(sender, message) {
+        const chatBody = document.getElementById('chat-body');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', sender.toLowerCase());
+        messageElement.textContent = `${sender}: ${message}`;
+        chatBody.appendChild(messageElement);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    
+    function speakMessage(message) {
+        const utterance = new SpeechSynthesisUtterance(message);
+        speechSynthesis.speak(utterance);
+    }
+    
+    // Placeholder for language translation - implement using a translation API
+    function translateMessage(message, targetLanguage) {
+        // Use an API like Google Translate to translate the message
+        // Return the translated message
+        return message;
+    }
+     
+</script>
+<body>
+    <header>
+        <h1>Health Guardian Chatbot</h1>
+    </header>
+    <div class="container">
+        <div class="chat-window">
+            <div class="chat-header">
+                <h2>Describe Your Symptoms</h2>
+            </div>
+            <div class="chat-body" id="chat-body"></div>
+            <div class="chat-footer">
+                <input type="text" id="user-input" placeholder="Enter your symptoms...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+        <div class="upload-section">
+            <h3>Upload MRI/CT/X-ray</h3>
+            <input type="file" id="file-input">
+            <button id="upload-btn">Upload</button>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 Health Guardian. All rights reserved.</p>
+    </footer>
+    <script src="/static/script.js"></script>
+</body>
+</html>
